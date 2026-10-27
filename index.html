@@ -1,74 +1,197 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="bn">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#153b32">
-  <title>Ayon's Library</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>Ayon PDF Library</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; padding:18px; font-family:Arial,sans-serif; background:#f1f5f9; color:#172033; }
+    .container { max-width:680px; margin:24px auto; background:#fff; padding:22px; border-radius:18px; box-shadow:0 5px 24px #0001; }
+    h1,h2 { text-align:center; }
+    input,button { width:100%; padding:13px; margin:8px 0; border-radius:9px; font-size:16px; }
+    input { border:1px solid #cbd5e1; }
+    button { border:0; background:#087f5b; color:#fff; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .book { padding:14px; margin:12px 0; border:1px solid #dbe3ec; border-radius:10px; overflow-wrap:anywhere; }
+    .book a { display:inline-block; margin-top:10px; color:#087f5b; }
+    #admin,#logoutBtn { display:none; }
+    #message { text-align:center; overflow-wrap:anywhere; }
+    .hint { color:#64748b; font-size:14px; line-height:1.5; }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#"><span class="brand-icon">▤</span><span>Ayon's <b>Library</b><small>YOUR PERSONAL READING SPACE</small></span></a>
-    <nav><a href="#library">Library</a><a href="#about">About</a><a href="#" id="loginNav">Admin login</a></nav>
-  </header>
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <span class="eyebrow">A WORLD OF KNOWLEDGE</span>
-        <h1>Find your next<br><em>great read.</em></h1>
-        <p>A calm little corner for books, ideas, and lifelong learning.</p>
-        <a class="primary-btn" href="#library">Explore the library <span>↗</span></a>
-        <div class="hero-note"><span class="dot"></span> A growing collection, one book at a time</div>
-      </div>
-      <div class="hero-art" aria-label="Illustration of a cozy bookshelf">
-        <div class="sun"></div><div class="plant">♧</div>
-        <div class="shelf">
-          <div class="book b1"></div><div class="book b2"></div><div class="book b3"></div><div class="book b4"></div><div class="book b5"></div>
-          <div class="shelf-board"></div>
-          <div class="book b6"></div><div class="book b7"></div><div class="book b8"></div><div class="book b9"></div>
-          <div class="shelf-board second"></div>
-          <div class="vase">◡</div><div class="book b10"></div><div class="book b11"></div>
-        </div>
-        <span class="art-caption">Read • Learn • Grow</span>
-      </div>
+  <main class="container">
+    <h1>📚 Ayon PDF Library</h1>
+    <p style="text-align:center">নিজের বই আপলোড করো এবং লাইব্রেরিতে প্রকাশ করো</p>
+
+    <section id="login">
+      <h2>Admin Login</h2>
+      <input id="email" type="email" placeholder="Admin Email" autocomplete="username">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+      <button id="loginBtn" type="button" onclick="loginAdmin()">Login</button>
+      <p class="hint">প্রথমে Supabase Authentication থেকে Admin account তৈরি করতে হবে।</p>
     </section>
 
-    <section class="library-section" id="library">
-      <div class="section-heading">
-        <div><span class="eyebrow">THE COLLECTION</span><h2>Explore the library</h2><p>Browse books shared with readers.</p></div>
-        <div class="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="Search books or authors…" aria-label="Search books"></div>
-      </div>
-      <div class="filter-row"><button class="filter active" data-category="All">All books</button><button class="filter" data-category="Programming">Programming</button><button class="filter" data-category="Science">Science</button><button class="filter" data-category="Literature">Literature</button><button class="filter" data-category="Other">Other</button><span id="bookCount" class="count">Sample collection</span></div>
-      <div id="bookGrid" class="book-grid"></div>
-      <div id="emptyState" class="empty hidden"><div>⌕</div><h3>No books found</h3><p>Try another search or category.</p></div>
+    <section id="admin">
+      <h2>📤 PDF বই আপলোড</h2>
+      <input id="bookTitle" type="text" maxlength="120" placeholder="বইয়ের নাম লিখো">
+      <input id="pdfFile" type="file" accept=".pdf,application/pdf">
+      <button id="uploadBtn" type="button" onclick="uploadPDF()">Upload PDF</button>
     </section>
 
-    <section class="about" id="about"><div class="about-mark">✳</div><div><span class="eyebrow">MADE FOR CURIOUS MINDS</span><h2>Every book opens a door.</h2><p>This library is built to make reading simple, welcoming, and accessible on mobile or desktop.</p></div></section>
+    <button id="logoutBtn" type="button" onclick="logoutAdmin()">Logout</button>
+    <p id="message" role="status" aria-live="polite"></p>
+    <hr>
+    <h2>📖 বইয়ের তালিকা</h2>
+    <div id="bookList">বই লোড হচ্ছে...</div>
   </main>
-  <footer><a class="brand footer-brand" href="#"><span class="brand-icon">▤</span><span>Ayon's <b>Library</b><small>YOUR PERSONAL READING SPACE</small></span></a><span>Built for curious minds. © <span id="year"></span></span><div class="socials"><a href="#" aria-label="GitHub profile">GH</a><a href="#" aria-label="YouTube channel">YT</a><a href="#" aria-label="Facebook page">f</a></div></footer>
 
-  <div class="modal-backdrop hidden" id="loginModal">
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <button class="close" id="closeModal" aria-label="Close">×</button>
-      <div class="modal-logo">▤</div><span class="eyebrow">PRIVATE ADMIN AREA</span>
-      <h2 id="loginTitle">Welcome back.</h2><p>Sign in to manage your library.</p>
-      <form id="loginForm"><label>Email address<input id="email" type="email" autocomplete="username" required placeholder="you@example.com"></label><label>Password<input id="password" type="password" autocomplete="current-password" required placeholder="Your secure password"></label><button class="primary-btn full" type="submit">Sign in securely <span>→</span></button></form>
-      <button class="text-btn" id="resetPassword">Forgot password?</button>
-      <div class="divider"><span>SECURE ACCOUNT</span></div><p class="tiny">Admin sign-in becomes active after you connect your own Supabase project and create your account.</p>
-      <p id="authMessage" class="message" role="status"></p>
-    </section>
-  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase Dashboard থেকে Project URL এবং Publishable key বসাও।
+    // কখনো service_role বা secret key এখানে বসাবে না।
+    const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+    const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+    const BUCKET = "books";
 
-  <div class="modal-backdrop hidden" id="adminModal">
-    <section class="modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
-      <button class="close" id="closeAdmin" aria-label="Close">×</button>
-      <span class="eyebrow">LIBRARY CONTROL</span><h2 id="adminTitle">Manage books</h2><p>Only the signed-in administrator can upload books.</p>
-      <form id="uploadForm"><label>Book title<input id="bookTitle" required maxlength="120" placeholder="e.g. Learning C++"></label><label>Author<input id="bookAuthor" maxlength="100" placeholder="Author name"></label><label>Category<select id="bookCategory"><option>Programming</option><option>Science</option><option>Literature</option><option>Other</option></select></label><label>Short description<textarea id="bookDescription" maxlength="500" rows="2" placeholder="What is this book about?"></textarea></label><label>PDF file<input id="bookFile" type="file" accept="application/pdf,.pdf" required></label><button class="primary-btn full" type="submit">Upload book <span>↑</span></button></form>
-      <button class="text-btn" id="changePassword">Send password reset email</button><button class="text-btn" id="signOut">Sign out</button><p id="uploadMessage" class="message" role="status"></p>
-    </section>
-  </div>
-  <script src="app.js"></script>
+    const client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const $ = (id) => document.getElementById(id);
+    function showMessage(text) { $("message").textContent = text; }
+
+    async function updateLoginUI() {
+      const { data, error } = await client.auth.getSession();
+      const loggedIn = !error && !!data.session;
+      $("login").style.display = loggedIn ? "none" : "block";
+      $("admin").style.display = loggedIn ? "block" : "none";
+      $("logoutBtn").style.display = loggedIn ? "block" : "none";
+    }
+
+    async function loginAdmin() {
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      if (!email || !password) {
+        showMessage("ইমেইল ও পাসওয়ার্ড লিখো।");
+        return;
+      }
+      $("loginBtn").disabled = true;
+      showMessage("লগইন হচ্ছে...");
+      try {
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await updateLoginUI();
+        showMessage("লগইন সফল হয়েছে।");
+      } catch (e) {
+        showMessage("লগইন হয়নি: " + e.message);
+      } finally {
+        $("loginBtn").disabled = false;
+      }
+    }
+
+    async function uploadPDF() {
+      const title = $("bookTitle").value.trim();
+      const file = $("pdfFile").files[0];
+      if (!title || !file) {
+        showMessage("বইয়ের নাম লিখো এবং PDF ফাইল নির্বাচন করো।");
+        return;
+      }
+      if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
+        showMessage("শুধু PDF ফাইল আপলোড করা যাবে।");
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        showMessage("ফাইলটি 20 MB-এর বেশি। ছোট PDF নির্বাচন করো বা Storage limit পরিবর্তন করো।");
+        return;
+      }
+
+      const { data: sessionData, error: sessionError } = await client.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        showMessage("আগে Admin Login করো।");
+        await updateLoginUI();
+        return;
+      }
+
+      $("uploadBtn").disabled = true;
+      showMessage("PDF আপলোড হচ্ছে...");
+      try {
+        const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = Date.now() + "_" + cleanName;
+        const { error } = await client.storage.from(BUCKET).upload(path, file, {
+          contentType: "application/pdf",
+          upsert: false
+        });
+        if (error) throw error;
+
+        $("bookTitle").value = "";
+        $("pdfFile").value = "";
+        showMessage("PDF আপলোড সফল হয়েছে!");
+        await loadBooks();
+      } catch (e) {
+        showMessage("আপলোড ব্যর্থ: " + e.message);
+      } finally {
+        $("uploadBtn").disabled = false;
+      }
+    }
+
+    async function loadBooks() {
+      const list = $("bookList");
+      list.textContent = "বই লোড হচ্ছে...";
+      try {
+        const { data, error } = await client.storage.from(BUCKET).list("", {
+          limit: 100,
+          sortBy: { column: "created_at", order: "desc" }
+        });
+        if (error) throw error;
+        const files = (data || []).filter(f =>
+          f.name && f.name.toLowerCase().endsWith(".pdf")
+        );
+        list.replaceChildren();
+        if (!files.length) {
+          list.textContent = "এখনো কোনো PDF বই আপলোড করা হয়নি।";
+          return;
+        }
+        for (const file of files) {
+          const title = file.name.replace(/^\d+_/, "").replace(/\.pdf$/i, "").replace(/_/g, " ");
+          const { data: urlData } = client.storage.from(BUCKET).getPublicUrl(file.name);
+          const card = document.createElement("div");
+          card.className = "book";
+          const heading = document.createElement("strong");
+          heading.textContent = "📘 " + title;
+          const link = document.createElement("a");
+          link.href = urlData.publicUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "PDF খুলে পড়ো";
+          card.append(heading, document.createElement("br"), link);
+          list.appendChild(card);
+        }
+      } catch (e) {
+        list.textContent = "বই লোড হয়নি। Supabase URL/key এবং Storage policy পরীক্ষা করো।";
+      }
+    }
+
+    async function logoutAdmin() {
+      const { error } = await client.auth.signOut();
+      if (error) showMessage("লগআউট সমস্যা: " + error.message);
+      else showMessage("লগআউট হয়েছে।");
+      await updateLoginUI();
+    }
+
+    async function start() {
+      if (SUPABASE_URL.startsWith("YOUR_") || SUPABASE_PUBLISHABLE_KEY.startsWith("YOUR_")) {
+        showMessage("প্রথমে কোডে Supabase Project URL ও Publishable key বসাও।");
+        $("bookList").textContent = "Supabase সেটআপের পর বই দেখা যাবে।";
+        return;
+      }
+      await updateLoginUI();
+      await loadBooks();
+      client.auth.onAuthStateChange(() => { updateLoginUI(); });
+    }
+    start();
+  </script>
 </body>
 </html>
